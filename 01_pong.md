@@ -2,7 +2,7 @@
 
 *Before we get started, this particular tutorial will be aimed towards beginners (both in terms of general programming knowledge as well as the LÖVE framework & Lua), if you're not a beginner, feel free to skim through!*
 
-Now, lets get started!
+Now, let's get started!
 
 First of all, create a folder for our Pong game (Note: I will include a link to the repository so you can follow along and allow you to debug any errors you may come across). In that folder, create a file called `main.lua`. This is the entry point to our game (and in this tutorial, the entire game) that LÖVE will look for when it runs.
 
@@ -46,13 +46,11 @@ In your `love.draw` function, add the following code:
 love.graphics.circle('fill', love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, 5)
 ```
 
-Your screen should look like this:
+You should see the ball drawn as a white circle in the centre of the screen.
 
-![Drawing ball to screen](https://i.imgur.com/W4fZcwm.png)
+If you're using the LÖVE extension in VSCode, or you looking at the API reference [here](https://love2d.org/wiki/love.graphics.circle), you'll see that `love.graphics.circle` takes 4 parameters. A draw mode (whether we want an outline 'line', or a solid circle 'fill'), x and y positions of the centre, as well as the circle's radius.
 
-If you're using the LÖVE extension in VSCode, or you looking at the API reference [here](https://love2d.org/wiki/love.graphics.circle), you'll see that `love.graphics.circle` takes 4 paramters. A draw mode (whether we want an outline 'line', or a solid circle 'fill'), x and y positions of the centre, as well as the circle's radius.
-
-Naturally, the x and y positions will vary once the game starts, so lets extract those values to variables, as well as the ball radius.
+Naturally, the x and y positions will vary once the game starts, so let's extract those values to variables, as well as the ball radius.
 
 In your `love.load` function, add the following:
 
@@ -86,7 +84,7 @@ Unary operators such as +=, -=, ++, --, *=, /= etc. are not supported in Lua.
 
 Finally, what is that `dt` doing? And how does it get there?
 
-`dt` is short for delta time, that is the time between the previous call to `love.update` and the current one. As mentioned in the beginning, `love.update` and `love.draw` get called as often as possible. If we simply added the ball's speed to it's current position every time we called update, the speed of the ball would differ depending on how powerful your computer is. By multipling the speed by the time between frames, we can ensure that the speed is consistent whether you're game is running at 1000 frames per second, or 30.
+`dt` is short for delta time, that is the time between the previous call to `love.update` and the current one. As mentioned in the beginning, `love.update` and `love.draw` get called as often as possible. If we simply added the ball's speed to its current position every time we called update, the speed of the ball would differ depending on how powerful your computer is. By multiplying the speed by the time between frames, we can ensure that the speed is consistent whether your game is running at 1000 frames per second, or 30.
 
 ## Keeping the ball within the screen
 
@@ -121,7 +119,7 @@ Right now we have our ball moving from left to right, and back again. Not exactl
 ```lua
 ballSpeedX, ballSpeedY = love.math.random(100, 200), love.math.random(100, 200)
 ```
-As you can see, in Lua we can assign multible variables at the same time. Here were setting both the x and y components to be a random value between 100 & 200 (as we're multiplying by dt, these values correspond to the speed in terms of number of pixels per second).
+As you can see, in Lua we can assign multiple variables at the same time. Here we're setting both the x and y components to be a random value between 100 & 200 (as we're multiplying by dt, these values correspond to the speed in terms of number of pixels per second).
 
 Now, let's actually use these new values. In our `love.update` function, replace all references to `ballSpeed` to `ballSpeedX`, and add the following line:
 ```lua
@@ -130,7 +128,7 @@ ballY = ballY + ballSpeedY * dt
 
 You'll see the ball will now move in a random direction starting from the centre of the screen.
 
-Let's keep the ball in bounds with it's y position. Similar to what we've done with the x position, add the following to the end of our update function:
+Let's keep the ball in bounds with its y position. Similar to what we've done with the x position, add the following to the end of our update function:
 ```lua
 if ballY < 0 then
     ballY = 0
@@ -170,9 +168,7 @@ Note that the `love.graphics.rectangle` function takes in a draw mode (either fi
 
 This is also why we set paddle 2's x value to be `love.graphics.getWidth() - paddle1X - paddleWidth`. We start from the right side of the screen (`love.graphics.getWidth()`), then move left by the paddleWidth plus paddle 1's distance from the left edge of the screen.
 
-Your screen should now look like this:
-
-![Drawing paddles to screen](https://i.imgur.com/gBylKyq.png)
+You should the paddles drawn at both sides of the screen.
 
 ## Taking control
 
