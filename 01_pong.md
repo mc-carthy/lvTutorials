@@ -46,6 +46,10 @@ In your `love.draw` function, add the following code:
 love.graphics.circle('fill', love.graphics.getWidth() / 2, love.graphics.getHeight() / 2, 5)
 ```
 
+Your screen should look like this:
+
+![Drawing ball to screen](https://i.imgur.com/W4fZcwm.png)
+
 If you're using the LÖVE extension in VSCode, or you looking at the API reference [here](https://love2d.org/wiki/love.graphics.circle), you'll see that `love.graphics.circle` takes 4 paramters. A draw mode (whether we want an outline 'line', or a solid circle 'fill'), x and y positions of the centre, as well as the circle's radius.
 
 Naturally, the x and y positions will vary once the game starts, so lets extract those values to variables, as well as the ball radius.
@@ -141,3 +145,95 @@ end
 You'll see the ball now bounces off all 4 sides of the screen. Progress!
 
 ## Paddles
+
+Similarly to the ball, we'll add the variables for size and position of the paddles in our `love.load` function:
+
+```lua
+paddleWidth = 10
+paddleHeight = 80
+paddle1X = 30
+paddle1Y = 10
+paddle2X = love.graphics.getWidth() - paddle1X - paddleWidth
+paddle2Y = 10
+```
+
+And draw them in the `love.draw` function by adding the following lines:
+
+```lua
+love.graphics.rectangle('fill', paddle1X, paddle1Y, paddleWidth, paddleHeight)
+love.graphics.rectangle('fill', paddle2X, paddle2Y, paddleWidth, paddleHeight)
+```
+
+Note that the `love.graphics.rectangle` function takes in a draw mode (either fill or line), x, y, width and height. The x and y parameters refer to the upper left corner, as shown in this image:
+
+![LÖVE coordinate system](https://love2d.org/w/images/f/f5/lovecoordsystem.png)
+
+This is also why we set paddle 2's x value to be `love.graphics.getWidth() - paddle1X - paddleWidth`. We start from the right side of the screen (`love.graphics.getWidth()`), then move left by the paddleWidth plus paddle 1's distance from the left edge of the screen.
+
+Your screen should now look like this:
+
+![Drawing paddles to screen](https://i.imgur.com/gBylKyq.png)
+
+## Taking control
+
+Now it's time to allow our players to move the paddles. First we'll add a speed variable for the paddles (like the ball, this will be in pixels per second). Add the following to your `love.load` function:
+
+```lua
+paddleSpeed = 300
+```
+
+In our `love.update` function, we'll make use of the `love.keyboard.isDown` function. This function takes in a keyboard character as a parameter, and returns true if that key is down this frame, false if not. We'll use W/S and Up Arrow/Down Arrow for player 1 and player 2's up and down controls respectively. Add the following to your `love.update`:
+
+```lua
+if love.keyboard.isDown('w') then
+    paddle1Y = paddle1Y - paddleSpeed * dt
+end
+if love.keyboard.isDown('s') then
+    paddle1Y = paddle1Y + paddleSpeed * dt
+end
+if love.keyboard.isDown('up') then
+    paddle2Y = paddle2Y - paddleSpeed * dt
+end
+if love.keyboard.isDown('down') then
+    paddle2Y = paddle2Y + paddleSpeed * dt
+end
+```
+
+This should be relatively straightforward to understand. Remember that down is positive in the y axis, and that we must remember to multiply our speed by dt.
+
+However, one problem that we have, is that our paddles can move off screen. In order to prevent this we'll use a relatively standard function called clamp. This is a common function in many programming languages' math libraries, Lua is not one of those libraries. Thankfully, it's a very simple function to write. Add this function our main.lua file (where it's added doesn't matter, I'd recommend keeping utility functions like this at the bottom of the file)
+
+```lua
+function math.clamp(value, min, max)
+    return math.max(math.min(value, max), min)
+end
+```
+
+By calling the function `math.clamp`, we've added it to the existing math library. The math library is simply a table, and we're adding the clamp property with this function as it's value. This isn't incredibly important to understand at the moment, we'll go over tables in much greater detail in the next tutorial.
+
+As you can see, the clamp function takes in the value we want clamped (in this case, the y value of our paddle), a minimum value, and a maximum value. First we take the minimum of the value we pass in and the max value. Then take the maximum of that value and the min value.
+
+You could of course write something like:
+
+```lua
+function math.clamp(value, min, max)
+    if value > max then
+        return max
+    elseif value < min then
+        return min
+    else
+        return value
+    end
+end
+```
+
+Feel free to use this version if it is more straightforward to understand.
+
+And now to put our clamp function to use. Simply add the following lines to our `love.update` function and you'll see that our paddles are now constrained to the screen area.
+
+```lua
+paddle1Y = math.clamp(paddle1Y, 0, love.graphics.getHeight() - paddleHeight)
+paddle2Y = math.clamp(paddle2Y, 0, love.graphics.getHeight() - paddleHeight)
+```
+
+Again, the `love.graphics.getHeight() - paddleHeight` value is used because the y component of our rectangle's origin is at the top, therefore the largest our y value should be is the height of the screen, minus the height of the paddle.
