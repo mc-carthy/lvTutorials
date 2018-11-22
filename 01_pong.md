@@ -97,7 +97,7 @@ It's great that we've got our ball moving, until it moves off screen into oblivi
 In order to do this, we'll confine our ball's x position to stay between 0 and the screen width. We can do this by adding the following code to our update function:
 
 ```lua
-if ballX + ballSize < 0 then
+if ballX + ballRad < 0 then
   ballX = 0
   ballSpeed = -ballSpeed
 end
@@ -358,7 +358,7 @@ You'll notice we use the same 3 lines in our `love.load` function, feel free to 
 Next, we'll modify our code that deals with the ball reaching the sides of the screen. In your `love.update` function, change the following code:
 
 ```lua
-if ballX + ballSize < 0 then
+if ballX + ballRad < 0 then
     ballX = 0
     ballSpeedX = -ballSpeedX
 end
@@ -371,7 +371,7 @@ end
 To this:
 
 ```lua
-if ballX + ballSize < 0 then
+if ballX + ballRad < 0 then
     resetBall()
     player2Score = player2Score + 1
 end
