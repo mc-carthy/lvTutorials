@@ -1,5 +1,7 @@
 # Pong
 
+---
+
 *Before we get started, this particular tutorial will be aimed towards beginners (both in terms of general programming knowledge as well as the LÖVE framework & Lua), if you're not a beginner, feel free to skim through!*
 
 Now, let's get started!
@@ -47,6 +49,8 @@ love.graphics.circle('fill', love.graphics.getWidth() / 2, love.graphics.getHeig
 ```
 
 You should see the ball drawn as a white circle in the centre of the screen.
+
+![Drawing ball to screen](https://i.imgur.com/1mE8XM4.png)
 
 If you're using the LÖVE extension in VSCode, or you looking at the API reference [here](https://love2d.org/wiki/love.graphics.circle), you'll see that `love.graphics.circle` takes 4 parameters. A draw mode (whether we want an outline 'line', or a solid circle 'fill'), x and y positions of the centre, as well as the circle's radius.
 
@@ -168,7 +172,9 @@ Note that the `love.graphics.rectangle` function takes in a draw mode (either fi
 
 This is also why we set paddle 2's x value to be `love.graphics.getWidth() - paddle1X - paddleWidth`. We start from the right side of the screen (`love.graphics.getWidth()`), then move left by the paddleWidth plus paddle 1's distance from the left edge of the screen.
 
-You should the paddles drawn at both sides of the screen.
+You should see the paddles drawn at both sides of the screen.
+
+![Drawing paddles to screen](https://i.imgur.com/cTvSZwG.png)
 
 ## Taking control
 
@@ -233,3 +239,72 @@ paddle2Y = math.clamp(paddle2Y, 0, love.graphics.getHeight() - paddleHeight)
 ```
 
 Again, the `love.graphics.getHeight() - paddleHeight` value is used because the y component of our rectangle's origin is at the top, therefore the largest our y value should be is the height of the screen, minus the height of the paddle.
+
+## Handling Collisions
+
+Handling of collisions can be broken down into 2 steps, collision detection and collision resolution. Collision detection methods will tell us whether or not there is a collision between two bodies, collision resolution methods will tell us what to two with the two colliding bodies.
+
+### Collision detection
+
+For our collision detection, we'll use an algorithm called Axis-Aligned Bounding Box (AABB for short). 
+
+We will approximate the ball as a square (since almost all collisions will be on the top-most, bottom-most, left-most or right-most point of the circle, this is an acceptable assumption). 
+
+This algorithm takes in the information for two squares/rectangles. As the name implies, for this algorithm it is necessary that they both have the same rotation (their axes are aligned), which is the case here.
+
+This algorithm will return true (meaning the two bodies are colliding) if the following conditions are met:
+
+* The left-most edge of BoxA is to the left of the right-most edge of BoxB
+* The right-most edge of BoxA is to the right of the left-most edge of BoxB
+* The top-most edge of BoxA is above the bottom-most edge of BoxB
+* The bottom-most edge of BoxA is below the top-most edge of BoxB
+
+This is better shown than explained, below is a simple diagram showing the conditions discussed above. I have also created a small LÖVE interactive demo which you can find [here](https://github.com/mc-carthy/lvAabb).
+
+![2D Axis-Aligned Bounding-Box example](https://learnopengl.com/img/in-practice/breakout/collisions_overlap.png)
+
+### Collision Resolution
+
+Now that we have the ability to detect when a collision has occurred, we must decide what to do with our colliding bodies. In this instance, the answer is relatively similar, we reverse the direction of the x component of the ball's velocity. Similar to what we've previously done when dealing with the ball colliding with the edge of the screen, we will also reset the ball's position to the leading edge of the paddle which it has collided with.
+
+The entire collision handling code (detection and resolution) is contained in the function below:
+
+```lua
+function checkCollisions()
+    if 
+        ballX < paddle1X + paddleWidth and
+        ballX + ballRad > paddle1X and
+        ballY < paddle1Y + paddleHeight and
+        ballY + ballRad > paddle1Y 
+    then
+        ballX = paddle1X + paddleWidth
+        ballSpeedX = -ballSpeedX
+    end
+    
+    if 
+        ballX < paddle2X + paddleWidth and
+        ballX + ballRad > paddle2X and
+        ballY < paddle2Y + paddleHeight and
+        ballY + ballRad > paddle2Y 
+    then
+        ballX = paddle2X - ballRad
+        ballSpeedX = -ballSpeedX
+    end
+end
+```
+
+Hopefully the above code should be quite simple to understand, the checks basically take the form of:
+
+```lua
+if 
+    collisionDetectionCode
+then
+    collisionResolutionCode
+end
+```
+
+For both paddles.
+
+We'll add a call to this `checkCollisions()` function at the end of our `update()` function so that the collisions are checked every frame.
+
+If you run your game now, the ball/paddle collisions should be functioning.
