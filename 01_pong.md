@@ -97,7 +97,7 @@ It's great that we've got our ball moving, until it moves off screen into oblivi
 In order to do this, we'll confine our ball's x position to stay between 0 and the screen width. We can do this by adding the following code to our update function:
 
 ```lua
-if ballX < 0 then
+if ballX + ballSize < 0 then
   ballX = 0
   ballSpeed = -ballSpeed
 end
@@ -308,3 +308,77 @@ For both paddles.
 We'll add a call to this `checkCollisions()` function at the end of our `update()` function so that the collisions are checked every frame.
 
 If you run your game now, the ball/paddle collisions should be functioning.
+
+## Scoring
+
+Naturally, a competitive game is not much fun if we can't see who's winning. So let's add the logic for scoring and a basic display to our game.
+
+First of all let's tackle the displaying of scores.
+
+Add the following variables to your `love.load` function to keep track of the scores:
+
+```lua
+    player1Score = 0
+    player2Score = 0
+```
+
+And the following to your `love.draw` function:
+
+```lua
+love.graphics.print('Player 1: ' .. player1Score, 10, 10)
+love.graphics.print('Player 2: ' .. player2Score, love.graphics.getWidth() - 75, 10)
+```
+
+The `love.graphics.print` function takes in the following parameters (text, xPosition, yPosition).
+
+(The `..` operator concatenates two strings.)
+
+Your screen should now look like this:
+
+TODO: Add image here
+
+![Addition of player scores]()
+
+The logic for detecting when we should increment the score already exists, it's the code that is currently being used for determining when the ball bounces off the left or right edges of the screen.
+
+Instead of simply bouncing the ball of the left/right edges of the screen, we will instead increment the relevant player's score, and reset the ball to the centre of the screen.
+
+First, we'll create the `resetBall` function:
+
+```lua
+function resetBall()
+    ballX = love.graphics.getWidth() / 2
+    ballY = love.graphics.getHeight() / 2
+    ballSpeedX, ballSpeedY = love.math.random(100, 200), love.math.random(100, 200)
+end
+```
+
+You'll notice we use the same 3 lines in our `love.load` function, feel free to replace these lines with `resetBall()`.
+
+Next, we'll modify our code that deals with the ball reaching the sides of the screen. In your `love.update` function, change the following code:
+
+```lua
+if ballX + ballSize < 0 then
+    ballX = 0
+    ballSpeedX = -ballSpeedX
+end
+if ballX > love.graphics.getWidth() then
+    ballX = love.graphics.getWidth()
+    ballSpeedX = -ballSpeedX
+end
+```
+
+To this:
+
+```lua
+if ballX + ballSize < 0 then
+    resetBall()
+    player2Score = player2Score + 1
+end
+if ballX > love.graphics.getWidth() then
+    resetBall()
+    player1Score = player1Score + 1
+end
+```
+
+At this point, our scoring system is up and running and the ball resets to the centre with a new random velocity each time.
