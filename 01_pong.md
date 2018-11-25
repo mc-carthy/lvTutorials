@@ -6,7 +6,7 @@
 
 Now, let's get started!
 
-First of all, create a folder for our Pong game (Note: I will include a link to the repository so you can follow along and allow you to debug any errors you may come across). In that folder, create a file called `main.lua`. This is the entry point to our game (and in this tutorial, the entire game) that LÖVE will look for when it runs.
+First of all, create a folder for our Pong game (Note: There is a link to the repository [here](https://github.com/mc-carthy/loveTutorialsCode) so you can follow along and allow you to debug any errors you may come across). In that folder, create a file called `main.lua`. This is the entry point to our game (and in this tutorial, the entire game) that LÖVE will look for when it runs.
 
 To test everything is running so far, navigate to your directory (either in IDE/text editor, or a terminal/command prompt) and run LÖVE. If you're using VSCode with the LÖVE plugin, you should be able to use Alt+L, alternatively you can add LÖVE to your path (see the 'Running Games' section [here](https://love2d.org/wiki/Getting_Started)), and type `love .` in your terminal.
 
@@ -97,7 +97,7 @@ It's great that we've got our ball moving, until it moves off screen into oblivi
 In order to do this, we'll confine our ball's x position to stay between 0 and the screen width. We can do this by adding the following code to our update function:
 
 ```lua
-if ballX + ballRad < 0 then
+if ballX < 0 then
   ballX = 0
   ballSpeed = -ballSpeed
 end
@@ -335,9 +335,7 @@ The `love.graphics.print` function takes in the following parameters (text, xPos
 
 Your screen should now look like this:
 
-TODO: Add image here
-
-![Addition of player scores]()
+![Addition of player scores](https://i.imgur.com/0oL4rTo.png)
 
 The logic for detecting when we should increment the score already exists, it's the code that is currently being used for determining when the ball bounces off the left or right edges of the screen.
 
