@@ -382,3 +382,354 @@ end
 ```
 
 At this point, our scoring system is up and running and the ball resets to the centre with a new random velocity each time.
+
+## Managing game state
+
+At this point, we've added all of the functionality required for our core game loop. However, the way in which the game starts right away when we open it, restarts immediately after a point is scored and has no end is not great in terms of a user experience. Let's fix this using a series of states that the game can exist in.
+
+Below is a diagram of showing the states our game can run in, as well as the possible transitions between these states.
+
+![Game State Diagram](https://i.imgur.com/cWYagIZ.png)
+
+Currently, we have the 'Main game state' up and running, so let's rename our `love.update` and `love.draw` functions to `updateMainGameState` and `drawMainGameState`. Now recreate the `love.update` and `love.draw` functions, and call the respective main game state functions from them, like so:
+
+```lua
+function love.update(dt)
+    updateMainGameState(dt)
+end
+
+function love.draw()
+    drawMainGameState()
+end
+```
+
+If you run your game now, you'll see that nothing has changed. A positive step in rewriting our code!
+
+Of course, the whole purpose of adding states is to allow us to change which functions get called in our update & draw methods. So, in our `love.load` function, let's create a new variable:
+
+```lua
+currentState = 'mainGame'
+```
+
+And update our update & draw functions like so:
+
+```lua
+function love.update(dt)
+    if currentState == 'mainGame' then
+        updateMainGameState(dt)
+    end
+end
+
+function love.draw()
+    if currentState == 'mainGame' then
+        drawMainGameState()
+    end
+end
+```
+
+Again, try running your game to ensure no behaviour has changed.
+
+Now, let's create the corresponding functions for the main menu, ready and end game states.
+
+The main menu, ready and end game states will simply prompt the user for input to move to the next state. As such, they won't need an update function. We'll create basic draw functions for them to indicate that the user needs to press a button to proceed.
+
+```lua
+function drawMainMenuState()
+    love.graphics.print('Main menu\nPress space to begin match', 10, 10)
+end
+function drawReadyState()
+    love.graphics.print('Ready?\nPress space to serve', 10, 10)
+end
+function drawEndGameState()
+    love.graphics.print('Game Over\nPress space to return to main menu', 10, 10)
+end
+```
+
+And our `love.draw` function function should be updated accordingly:
+
+```lua
+function love.draw()
+    if currentState == 'mainMenu' then
+        drawMainMenuState()
+    elseif currentState == 'ready' then
+        drawReadyState()
+    elseif currentState == 'mainGame' then
+        drawMainGameState()
+    elseif currentState == 'endGame' then
+        drawEndGameState()
+    end
+end
+```
+
+Naturally, we'll want to start at the main menu, so let's change our initial state in `love.load` to:
+
+```lua
+currentState = 'mainMenu'
+```
+
+Currently, we have no way to transition between our states, as described in the draw functions, we'll use the spacebar to navigate between events. LÖVE calls a function every time a key is pressed, fittingly called `love.keypressed`. This passes in the key that was pressed as a parameter. In order to handle the input for transitioning between states, let's add the following:
+
+```lua
+function love.keypressed(key)
+    if key == 'space' then
+        if currentState == 'mainMenu' then
+            currentState = 'ready'
+        elseif currentState == 'ready' then
+            currentState = 'mainGame'
+        elseif currentState == 'endGame' then
+            currentState = 'mainMenu'
+        end
+    end
+end
+```
+
+And as I'm sure you're sick of having to click the close button on the window every time you want to exit the game, feel free to add this block in the `love.keypressed` function to allow you to close the game by pressing the escape key:
+
+```lua
+if key == 'escape' then
+    love.event.quit()
+end
+```
+
+Now that we've handled the state transition from main menu to ready, from ready to main game, and from end game back to the main menu. All that is left to implement is to add the transition from main game, back to ready. This should occur after a point is scored so the ball doesn't immediately get served again. All we need to do is to change the current state in the block of code executed when a point is scored, as below:
+
+```lua
+if ballX + ballRad < 0 then
+    resetBall()
+    player2Score = player2Score + 1
+    currentState = 'ready'
+end
+if ballX > love.graphics.getWidth() then
+    resetBall()
+    player1Score = player1Score + 1
+    currentState = 'ready'
+end
+```
+
+One thing that should be noted at this point, is that the ball is always served in the positive x direction. In order to make this more fair, we can give the ball a 50:50 chance of which direction it will go in. We can make use of the `love.math.random` function, which if called with no parameters, will return a number between 0 and 1. Add the following block to the resetBall function after we set the ball's x and y components of velocity:
+
+```lua
+if love.math.random() > 0.5 then
+    ballSpeedX = ballSpeedX * -1
+end
+```
+
+Another improvement that could be made in this function is to centre the paddles. Remove the:
+
+```lua
+paddle1Y = 10
+paddle2Y = 10
+```
+
+Assignments in `love.load` and instead, add the following to `resetBall` instead:
+
+```lua
+paddle1Y = love.graphics.getHeight() / 2 - paddleHeight
+paddle2Y = love.graphics.getHeight() / 2 - paddleHeight
+```
+
+Be sure to have declared the `paddleHeight` variable prior to calling `resetBall` otherwise you'll see an error that `paddleHeight` has not yet been initialised and is therefore null. At this point it is also wise to rename the `resetBall` function to something more generic, such as `resetMainGameState`.
+
+## The end
+
+Finally, all is left to do is to end the game. Add a `maxScore` variable to `love.load` with the winning score of your choice, and when a point is scored, check if the scoring player's score is greater than maxScore, moving to the game over state if so:
+
+```lua
+    if ballX + ballRad < 0 then
+        resetMainGameState()
+        player2Score = player2Score + 1
+        if player2Score >= maxScore then
+            currentState = 'gameOver'
+        else
+            currentState = 'ready'
+        end
+    end
+    if ballX > love.graphics.getWidth() then
+        resetMainGameState()
+        player1Score = player1Score + 1
+        if player1Score >= maxScore then
+            currentState = 'gameOver'
+        else
+            currentState = 'ready'
+        end
+    end
+```
+
+A small finishing touch is to display the winning player on the game over screen. This can be done by setting a `gameOverMessage` variable in `love.load`, setting it in the above code, and passing it to the `drawEndGameState`'s print function:
+
+```lua
+if player2Score > maxScore then
+    currentState = 'gameOver'
+    gameOverMessage = 'Player 2 wins!\nPress space to return to main menu'
+else
+    currentState = 'ready'
+end
+```
+
+```lua
+function drawEndGameState()
+    love.graphics.print(gameOverMessage, 10, 10)
+end
+```
+
+And with that, we have a fully functioning game of Pong. Well done on getting to the end and hopefully you've got a good grasp on the basics of game development. In our next tutorial we'll be looking at the Lua language in much greater detail, including many of the features that differentiate it from other scripting languages, as well as improved collision logic, and even a little bit of procedural level generation.
+
+In the meantime, feel free to play around with the code you've written, and maybe make some improvements. How about increasing the ball's speed every time it hits a paddle? Or ensuring it is always sent to the previous scoring player's side after a point is scored?
+
+## Full code:
+
+```lua
+function love.load()
+    currentState = 'mainMenu'
+    ballRad = 5
+    paddleWidth = 10
+    paddleHeight = 80
+    resetMainGameState()
+    paddleSpeed = 300
+    paddle1X = 30
+    player1Score = 0
+    paddle2X = love.graphics.getWidth() - paddle1X - paddleWidth
+    player2Score = 0
+    maxScore = 5
+    gameOverMessage = ''
+end
+
+function love.update(dt)
+    if currentState == 'mainGame' then
+        updateMainGameState(dt)
+    end
+end
+
+function love.draw()
+    if currentState == 'mainMenu' then
+        drawMainMenuState()
+    elseif currentState == 'ready' then
+        drawReadyState()
+    elseif currentState == 'mainGame' then
+        drawMainGameState()
+    elseif currentState == 'endGame' then
+        drawEndGameState()
+    end
+end
+
+function love.keypressed(key)
+    if key == 'space' then
+        if currentState == 'mainMenu' then
+            currentState = 'ready'
+        elseif currentState == 'ready' then
+            currentState = 'mainGame'
+        elseif currentState == 'endGame' then
+            currentState = 'mainMenu'
+        end
+    end
+    if key == 'escape' then
+        love.event.quit()
+    end
+end
+
+function updateMainGameState(dt)
+    ballX = ballX + ballSpeedX * dt
+    ballY = ballY + ballSpeedY * dt
+    if ballX + ballRad < 0 then
+        resetMainGameState()
+        player2Score = player2Score + 1
+        if player2Score >= maxScore then
+            currentState = 'endGame'
+            gameOverMessage = 'Player 2 wins!\nPress space to return to main menu'
+        else
+            currentState = 'ready'
+        end
+    end
+    if ballX > love.graphics.getWidth() then
+        resetMainGameState()
+        player1Score = player1Score + 1
+        if player1Score >= maxScore then
+            currentState = 'endGame'
+            gameOverMessage = 'Player 1 wins!\nPress space to return to main menu'
+        else
+            currentState = 'ready'
+        end
+    end
+    if ballY < 0 then
+        ballY = 0
+        ballSpeedY = -ballSpeedY
+    end
+    if ballY > love.graphics.getHeight() then
+        ballY = love.graphics.getHeight()
+        ballSpeedY = -ballSpeedY
+    end
+
+    if love.keyboard.isDown('w') then
+        paddle1Y = paddle1Y - paddleSpeed * dt
+    end
+    if love.keyboard.isDown('s') then
+        paddle1Y = paddle1Y + paddleSpeed * dt
+    end
+    if love.keyboard.isDown('up') then
+        paddle2Y = paddle2Y - paddleSpeed * dt
+    end
+    if love.keyboard.isDown('down') then
+        paddle2Y = paddle2Y + paddleSpeed * dt
+    end
+
+    paddle1Y = math.clamp(paddle1Y, 0, love.graphics.getHeight() - paddleHeight)
+    paddle2Y = math.clamp(paddle2Y, 0, love.graphics.getHeight() - paddleHeight)
+
+    checkCollisions()
+end
+
+function drawMainGameState()
+    love.graphics.circle("fill", ballX, ballY, ballRad)
+    love.graphics.rectangle('fill', paddle1X, paddle1Y, paddleWidth, paddleHeight)
+    love.graphics.rectangle('fill', paddle2X, paddle2Y, paddleWidth, paddleHeight)
+    love.graphics.print('Player 1: ' .. player1Score, 10, 10)
+    love.graphics.print('Player 2: ' .. player2Score, love.graphics.getWidth() - 75, 10)
+end
+
+function drawMainMenuState()
+    love.graphics.print('Main menu\nPress space to begin match', 10, 10)
+end
+function drawReadyState()
+    love.graphics.print('Ready?\nPress space to serve', 10, 10)
+end
+function drawEndGameState()
+    love.graphics.print(gameOverMessage, 10, 10)
+end
+
+function math.clamp(value, min, max)
+    return math.max(math.min(value, max), min)
+end
+
+function checkCollisions()
+    if 
+        ballX < paddle1X + paddleWidth and
+        ballX + ballRad > paddle1X and
+        ballY < paddle1Y + paddleHeight and
+        ballY + ballRad > paddle1Y 
+    then
+        ballX = paddle1X + paddleWidth
+        ballSpeedX = -ballSpeedX
+    end
+    
+    if 
+        ballX < paddle2X + paddleWidth and
+        ballX + ballRad > paddle2X and
+        ballY < paddle2Y + paddleHeight and
+        ballY + ballRad > paddle2Y 
+    then
+        ballX = paddle2X - ballRad
+        ballSpeedX = -ballSpeedX
+    end
+end
+
+function resetMainGameState()
+    ballX = love.graphics.getWidth() / 2
+    ballY = love.graphics.getHeight() / 2
+    ballSpeedX, ballSpeedY = love.math.random(100, 200), love.math.random(100, 200)
+    if love.math.random() > 0.5 then
+        ballSpeedX = ballSpeedX * -1
+    end
+    paddle1Y = love.graphics.getHeight() / 2 - paddleHeight
+    paddle2Y = love.graphics.getHeight() / 2 - paddleHeight
+end
+```
