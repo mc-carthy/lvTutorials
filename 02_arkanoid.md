@@ -221,9 +221,9 @@ As a refresher, here we are checking the following 4 conditions are met:
 In order to verify that this works, add the following to `love.draw`:
 
 ```lua
-    if collisionCheck(ball, paddle) then
-        love.graphics.print('Paddle collision!', 10, 10)
-    end
+if collisionCheck(ball, paddle) then
+    love.graphics.print('Paddle collision!', 10, 10)
+end
 ```
 
 TODO: Add relevant screenshot
@@ -267,15 +267,15 @@ Hopefully this is (relatively) straightforward to read. The first two lines calc
 Note: Another Lua trick we're using here is declaring 2 variables in one line of code, the two code blocks below are equivilent.
 
 ```lua
-    local x1, x2 = rect1.x - rect2.x - rect2.w, rect1.x + rect1.w - rect2.x
-    local y1, y2 = rect1.y - rect2.y - rect2.h, rect1.y + rect1.h - rect2.y
+local x1, x2 = rect1.x - rect2.x - rect2.w, rect1.x + rect1.w - rect2.x
+local y1, y2 = rect1.y - rect2.y - rect2.h, rect1.y + rect1.h - rect2.y
 ```
 
 ```lua
-    local x1 = rect1.x - rect2.x - rect2.w
-    local x2 = rect1.x + rect1.w - rect2.x
-    local y1 = rect1.y - rect2.y - rect2.h
-    local y2 = rect1.y + rect1.h - rect2.y
+local x1 = rect1.x - rect2.x - rect2.w
+local x2 = rect1.x + rect1.w - rect2.x
+local y1 = rect1.y - rect2.y - rect2.h
+local y2 = rect1.y + rect1.h - rect2.y
 ```
 
 We'll amend our existing `collisionCheck` function, so that instead of returning true or false, it will return the minumum separation vector in the event of a collision, and return nil if not. As we are only going to be calling this for collisions with the ball, lets add it to the ball table by renaming it to `ball.collisionCheck`.
@@ -329,3 +329,125 @@ end
 As discussed previously, we simply calculate the minimum separation vector, and if it is not nil, reset the ball's position accordingly and flip the relevant component of its velocity.
 
 Now it's simply a matter of adding this to the end of the `ball.update` function, and our ball is now bouncing off all sides of our paddle.
+
+## Adding bricks
+
+Now that we've got the ball and paddle sorted, time to add the bricks! First of all we'll create a general bricks table to hold all of the properties required. As with the paddle & ball, add the following to the top of the file:
+
+```lua
+bricks = {}
+```
+
+And in `love.load` (the comments are of course optional):
+
+```lua
+bricks.w = 80 -- The width of a single brick
+bricks.h = 20 -- The height of a single brick
+bricks.rows = 4 -- The number of rows of bricks
+bricks.columns = 7 -- The number of columns of bricks
+bricks.paddingX = 10 -- The horizontal gap between neighbouring bricks
+bricks.paddingY = 5 -- The vertical gap between neighbouring bricks
+bricks.originX = 80 -- The distance from the left edge of the screen where we will begin placing bricks
+bricks.originY = 40 -- The distance from the top edge of the screen where we will begin placing bricks
+bricks.levelbricks = {} -- This table will hold the actual brick objects
+```
+
+Now that we've got the required properties, let's begin writing the functions to create and draw our bricks. First of all, to create our bricks. We'll have a simple function to return a table representing a brick that takes an x and y parameter, and an optional width and height parameter:
+
+```lua
+function bricks.createBrick(x, y, w, h)
+    local b = {}
+    b.x = x
+    b.y = y
+    b.w = w or bricks.w
+    b.h = h or bricks.h
+    return b
+end
+```
+
+In Lua, if we call this function like so `bricks.createBrick(10, 10)`, the w & h parameters will be `nil`. Therefore, `b.w` and `b.h` will be set as `bricks.w` and `bricks.h` respectively.
+
+Next, we'll use a nested loop to iterate over every column and every row to get the x and y positions for all of our bricks. Then use those values in the above function to create a table representing an individual brick at that position, then insert that into the `bricks.levelBricks` table.
+
+```lua
+function bricks.createBricks()
+    for x = 1, bricks.columns do
+        for y = 1, bricks.rows do
+            local b = bricks.createBrick(bricks.originX + (bricks.w + bricks.paddingX) * (x - 1), bricks.originY + (bricks.h + bricks.paddingY) * (y - 1))
+            table.insert(bricks.levelBricks, b)
+        end
+    end
+end
+```
+
+Note: In Lua, numeric for loops (as opposed to generic for loops, which we'll meet soon) take 3 parameters (1 optional), in the following format:
+
+```lua
+for var = startValue, endValue, stepValue do -- If the step value is omitted, 1 is used
+    -- logic
+end
+```
+
+It is important to note that startValue and endValue are inclusive here. That is to say the following loop:
+
+```lua
+for i = 1, 3, 1 do
+    print(i)
+end
+```
+
+Will result in the following:
+
+```lua
+1
+2
+3
+```
+
+With that covered, let's move onto drawing the bricks to the screen, as well as meeting the generic for loop.
+
+```lua
+function bricks.drawbricks()
+    for _, b in pairs(bricks.levelBricks) do
+        love.graphics.rectangle("line", b.x, b.y, bricks.w, bricks.h)
+    end
+end
+```
+
+This will loop over every entry in the table, and return its key and value (as '\_' and 'b' respectively here). We have no use for the key here (which is the entries index in the table. As we didn't explitly give it a key, this is the default behaviour), hence naming it '\_'. A rectangle is then drawn to represent that brick.
+
+If you run the game now, you should see the following:
+
+TODO: Add screenshot
+
+Now, onto handling collisions. This is a relatively trivial exercise as we've already done the hard work. We'll use the following function (which is largely similar to our paddle collision function):
+
+```lua
+function ball.checkBricksCollision(ball, bricks)
+    for i, b in ipairs(bricks) do
+        local msv = ball.collisionCheck(ball, b)
+
+        if msv ~= nil then
+            if msv.x ~= 0 then
+                ball.x = ball.x - msv.x
+                ball.speedX = -ball.speedX
+            end
+            if msv.y ~= 0 then
+                ball.y = ball.y - msv.y
+                ball.speedY = -ball.speedY
+            end
+            table.remove(bricks, i)
+        end
+    end
+end
+```
+
+A few small points to note, for this loop, we are using `ipairs` instead of `pairs`, this will return the index of the entry of the table that we are looping over. As we do not give our entries a key when we insert them into this table, the key they are given is their index. Ultimately using `pairs` here would be fine, however it is a good idea to use `ipairs` to clearly state that we will require the index.
+
+This index is used to remove the brick that we collide with. This will be changed at a later point. First of all, we will be implenting bricks of varying strength, so some bricks will require more than 1 hit. Secondly, the ball should not have to ability to modify the bricks table directly. This can make finding bugs tricky to trace if many different objects have the ability to directly modify the bricks table.
+
+If you run your game now, your ball should destroy the bricks upon contact.
+
+TODO: Add screenshot
+
+*To be continued*
