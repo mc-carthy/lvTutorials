@@ -125,3 +125,71 @@ end
 I'll be using the former as it is the same style used for the various functions provided by LÖVE (and yes, `love` is a table, and `load`, `update` and `draw` are all keys in that table).
 
 Now with our core update and draw functions simply calling the relevant functions on the various objects in our game. Our code will be much neater and easier to follow. It will also make exctacting objects into their own files a much more simple process.
+
+## Adding the ball
+
+Again, this will be largely re-using the code we've used for Pong, only tidied up using a `ball` table. Add the following at the top of the file like we did for the paddle table:
+
+```lua
+ball = {}
+```
+
+And in `love.load`:
+
+```lua
+ball.r = 5
+ball.x = love.graphics.getWidth() / 2
+ball.y = paddle.y - 20
+ball.speedX = 200
+ball.speedY = -200
+```
+
+Where `r` is the radius of the ball.
+
+Just like with the paddle, we'll create update and draw methods for the ball:
+
+```lua
+function ball.update(dt)
+    ball.x = ball.x + ball.speedX * dt
+    ball.y = ball.y + ball.speedY * dt
+
+    if ball.x < 0 then
+        ball.x = 0
+        ball.speedX = -ball.speedX
+    end
+    if ball.x > love.graphics.getWidth() then
+        ball.x = love.graphics.getWidth()
+        ball.speedX = -ball.speedX
+    end
+    if ball.y < 0 then
+        ball.y = 0
+        ball.speedY = -ball.speedY
+    end
+    if ball.y > love.graphics.getHeight() then
+        ball.y = love.graphics.getHeight()
+        ball.speedY = -ball.speedY
+    end
+end
+
+function ball.draw()
+    love.graphics.circle('fill', ball.x, ball.y, ball.r)
+end
+```
+
+Again, this is all logic that we've used previously, so should be straightforward to understand. First of all, move the ball's position using the current x and y speeds. Then, if the centre of the ball overlaps with any of the 4 edges of the screen, we reset the ball's position so it is on that edge, and reverse either the x or y component of the speed.
+
+All that is left to do is call these functions:
+
+```lua
+function love.update(dt)
+    paddle.update(dt)
+    ball.update(dt)
+end
+
+function love.draw()
+    paddle.draw()
+    ball.draw()
+end
+```
+
+If you run the game now, you should see the ball bouncing around the screen, but not interacting with the paddle. Let's address that next.
